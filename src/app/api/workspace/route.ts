@@ -7,7 +7,7 @@ export async function GET(req:Request){try{
  checkOrigin(req);const {db}=await authenticate(req);const params=new URL(req.url).searchParams;
  const kind=z.enum(['thoughts','items','boards','extractions','grants','members']).parse(params.get('kind')??'thoughts');
  const q=z.string().max(200).parse(params.get('q')??'');const offset=z.coerce.number().int().min(0).max(100000).parse(params.get('offset')??0);
- const tag=kind==='thoughts'&&/^#[\p{L}\p{N}_]{1,64}$/u.test(q)?q.slice(1).toLowerCase():null;
+ const tag=kind==='thoughts'&&/^#[\p{L}\p{N}_-]{1,64}$/u.test(q)?q.slice(1).toLowerCase():null;
  let query=db.from(kind==='grants'?'mcp_grants':kind==='members'?'workspace_members':kind).select(tag?'*,thought_tags!inner(tags!inner(name))':'*').order('created_at',{ascending:false}).range(offset,offset+99);
  if(kind==='thoughts') query=query.eq('archived',false);
  if(kind==='items') query=query.neq('status','archived');

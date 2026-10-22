@@ -9,18 +9,19 @@ async function identity(db:PGlite,id:string,client?:string){await db.exec('reset
 
 test('two members share content while preserving authors, assignments and tenant boundaries',async()=>{
  const db=await setup();try{
- await db.exec(await readFile('supabase/migrations/002_shared_business.sql','utf8'));
+ await db.exec(await readFile('supabase/migrations/002_shared_business.sql','utf8'));await db.exec(await readFile('supabase/migrations/004_hyphenated_tags.sql','utf8'));
  // Operator provisions the second seat; ordinary users cannot do this.
  await db.query('delete from public.workspace_members where user_id=$1',[b]);
  await db.query("insert into public.workspace_members(workspace_id,user_id,slot,display_name) values($1,$2,2,'Second member')",[a,b]);
  await assert.rejects(()=>db.query("insert into public.workspace_members(workspace_id,user_id,slot,display_name) values($1,$2,3,'Third member')",[a,c]));
- await identity(db,a);await db.query('select public.capture_thought($1,$2,$3)',[thought,'Review the client handoff #operations','UTC']);
+ await identity(db,a);await db.query('select public.capture_thought($1,$2,$3)',[thought,'Review the client handoff #customer-relations','UTC']);
  await identity(db,b);
  assert.equal((await db.query<{created_by:string}>('select created_by from public.thoughts')).rows[0].created_by,a);
  assert.equal((await db.query('select * from public.workspace_members')).rows.length,2);
  const board=(await db.query<{id:string}>("insert into public.boards(id,title) values(gen_random_uuid(),'Operations') returning id")).rows[0].id;
- await db.query('select public.capture_thought($1,$2,$3)',[crypto.randomUUID(),'Shared tag #operations','UTC']);
+ await db.query('select public.capture_thought($1,$2,$3)',[crypto.randomUUID(),'Shared tag #customer-relations','UTC']);
  assert.equal((await db.query('select * from public.tags')).rows.length,1);
+ assert.equal((await db.query<{name:string}>('select name from public.tags')).rows[0].name,'customer-relations');
  await identity(db,a);
  const task=(await db.query<{id:string}>("insert into public.items(kind,title,source_id,assigned_to) values('task','Update checklist',$1,$2) returning id",[thought,b])).rows[0].id;
  await db.query("insert into public.items(kind,title,board_id,source_id) values('idea','Handoff idea',$1,$2)",[board,thought]);
@@ -62,7 +63,7 @@ test('two members share content while preserving authors, assignments and tenant
 test('upgrade preserves existing private records without silently sharing them',async()=>{
  const db=await setup();try{
  await identity(db,a);await db.query('select public.capture_thought($1,$2,$3)',[thought,'Existing private note','UTC']);
- await db.exec('reset role');await db.exec(await readFile('supabase/migrations/002_shared_business.sql','utf8'));
+ await db.exec('reset role');await db.exec(await readFile('supabase/migrations/002_shared_business.sql','utf8'));await db.exec(await readFile('supabase/migrations/004_hyphenated_tags.sql','utf8'));
  await identity(db,b);assert.equal((await db.query('select * from public.thoughts')).rows.length,0);
  await identity(db,a);const row=(await db.query<{created_by:string;workspace_id:string;body:string}>('select * from public.thoughts')).rows[0];
  assert.equal(row.created_by,a);assert.equal(row.workspace_id,a);assert.equal(row.body,'Existing private note');

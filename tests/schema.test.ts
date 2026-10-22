@@ -12,7 +12,7 @@ test('reject invalid dates, timezone and reversed events',()=>{
 });
 test('capture bounds and Unicode tag normalization',()=>{
  assert.equal(operation.safeParse({op:'capture',id:crypto.randomUUID(),body:' ',timezone:'UTC'}).success,false);
- assert.deepEqual(hashtags('#Home #home #café'),['home','café']);
+ assert.deepEqual(hashtags('#Home #home #café #customer-relations #CUSTOMER-RELATIONS'),['home','café','customer-relations']);
 });
 test('calendar uses selected timezone and rejects DST gaps and repeats',()=>{
  assert.equal(toInstant('2026-10-21T14:00','America/Edmonton'),'2026-10-21T20:00:00.000Z');

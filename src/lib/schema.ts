@@ -27,4 +27,4 @@ export type Thought = Attribution & {id:string;body:string;timezone:string;creat
 export type Item = Attribution & Suggestion & {id:string;source_id:string|null;board_id:string|null;assigned_to:string|null;calendar_owner_id:string|null;updated_by:string;status:'open'|'done'|'archived';created_at:string};
 export type Board = Attribution & {id:string;title:string;created_at:string};
 export type Extraction = Attribution & {id:string;thought_id:string;suggestions:Suggestion[];accepted_ids:Record<string,string>;created_at:string};
-export const hashtags = (body:string) => [...new Set(Array.from(body.matchAll(/#([\p{L}\p{N}_]{1,64})/gu),m=>m[1].toLowerCase()))];
+export const hashtags = (body:string) => [...new Set(Array.from(body.matchAll(/#([\p{L}\p{N}_-]{1,64})/gu),m=>m[1].toLowerCase()))];
