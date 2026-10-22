@@ -3,8 +3,8 @@ import type { MetadataRoute } from 'next';
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: '/',
-    name: 'Stillroom · Sotaria',
-    short_name: 'Stillroom',
+    name: 'Sotaria Workspace',
+    short_name: 'Sotaria Workspace',
     description: 'Your shared Sotaria thoughts, boards, tasks and calendar.',
     start_url: '/',
     scope: '/',
