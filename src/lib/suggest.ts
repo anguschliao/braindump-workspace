@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { aiEnabled, extract, AI_MODEL } from './extract';
 export async function suggestThought(db:SupabaseClient, id:string) {
@@ -20,7 +21,7 @@ export async function suggestThought(db:SupabaseClient, id:string) {
  } catch (error) {
    const e=error as {name?:string;status?:number;code?:string};
    const safe=(v:unknown)=>typeof v==='string' && /^[a-zA-Z0-9_]{1,64}$/.test(v)?v:undefined;
-   console.error('AI suggestion failed',{stage,name:safe(e?.name),status:typeof e?.status==='number'?e.status:undefined,code:safe(e?.code)});
+   console.error('AI suggestion failed',{stage,name:safe(e?.name),status:typeof e?.status==='number'?e.status:undefined,code:safe(e?.code),issues:error instanceof z.ZodError?error.issues.map(i=>({code:i.code,path:i.path.filter(p=>typeof p==='number'||['suggestions','kind','title','details','due_on','starts_at','ends_at','timezone'].includes(String(p)))})):undefined});
    return {status:'unavailable',extraction:null};
  }
 }
