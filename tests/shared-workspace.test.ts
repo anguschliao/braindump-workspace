@@ -10,6 +10,7 @@ async function identity(db:PGlite,id:string,client?:string){await db.exec('reset
 test('two members share content while preserving authors, assignments and tenant boundaries',async()=>{
  const db=await setup();try{
  await db.exec(await readFile('supabase/migrations/002_shared_business.sql','utf8'));await db.exec(await readFile('supabase/migrations/004_hyphenated_tags.sql','utf8'));
+ await db.exec(await readFile('supabase/migrations/006_both_assignments.sql','utf8'));
  // Operator provisions the second seat; ordinary users cannot do this.
  await db.query('delete from public.workspace_members where user_id=$1',[b]);
  await db.query("insert into public.workspace_members(workspace_id,user_id,slot,display_name) values($1,$2,2,'Second member')",[a,b]);
@@ -26,6 +27,13 @@ test('two members share content while preserving authors, assignments and tenant
  const task=(await db.query<{id:string}>("insert into public.items(kind,title,source_id,assigned_to) values('task','Update checklist',$1,$2) returning id",[thought,b])).rows[0].id;
  await db.query("insert into public.items(kind,title,board_id,source_id) values('idea','Handoff idea',$1,$2)",[board,thought]);
  const event=(await db.query<{id:string}>("insert into public.items(kind,title,starts_at,ends_at,calendar_owner_id) values('event','Client review','2026-10-25T10:00:00Z','2026-10-25T11:00:00Z',$1) returning id",[b])).rows[0].id;
+ const both=(await db.query<{id:string;for_both:boolean;calendar_owner_id:string|null}>("insert into public.items(kind,title,starts_at,ends_at,for_both) values('event','Together','2026-10-25T10:00:00Z','2026-10-25T11:00:00Z',true) returning *")).rows[0];
+ assert.equal(both.for_both,true);assert.equal(both.calendar_owner_id,null);
+ await db.query('update public.items set for_both=false,calendar_owner_id=$1 where id=$2',[a,both.id]);
+ await db.query('update public.items set for_both=true,calendar_owner_id=null where id=$1',[both.id]);
+ await assert.rejects(()=>db.query('update public.items set for_both=false where id=$1',[both.id]));
+ await assert.rejects(()=>db.query("insert into public.items(kind,title,for_both) values('idea','Invalid',true)"));
+ await assert.rejects(()=>db.query("insert into public.items(kind,title,for_both,assigned_to) values('task','Ambiguous',true,$1)",[a]));
  await identity(db,b);
  await db.query("update public.items set status='done' where id=$1",[task]);
  const changed=(await db.query<{created_by:string;assigned_to:string;updated_by:string}>('select created_by,assigned_to,updated_by from public.items where id=$1',[task])).rows[0];
@@ -43,9 +51,9 @@ test('two members share content while preserving authors, assignments and tenant
  await identity(db,a);
  const extraction=(await db.query<{id:string}>("insert into public.extractions(thought_id,suggestions,model) values($1,'[{}]','test') returning id",[thought])).rows[0].id;
  await identity(db,b);
- const edit={kind:'task',title:'Reviewed by second member',details:'',due_on:null,starts_at:null,ends_at:null,timezone:'UTC',assigned_to:a,calendar_owner_id:null};
- const accepted=(await db.query<{created_by:string;assigned_to:string;source_id:string}>('select * from public.accept_suggestions($1,$2,$3)',[extraction,[0],JSON.stringify([edit])])).rows[0];
- assert.equal(accepted.created_by,b);assert.equal(accepted.assigned_to,a);assert.equal(accepted.source_id,thought);
+ const edit={kind:'task',title:'Reviewed by second member',details:'',due_on:null,starts_at:null,ends_at:null,timezone:'UTC',assigned_to:null,calendar_owner_id:null,for_both:true};
+ const accepted=(await db.query<{created_by:string;assigned_to:string|null;for_both:boolean;source_id:string}>('select * from public.accept_suggestions($1,$2,$3)',[extraction,[0],JSON.stringify([edit])])).rows[0];
+ assert.equal(accepted.created_by,b);assert.equal(accepted.assigned_to,null);assert.equal(accepted.for_both,true);assert.equal(accepted.source_id,thought);
  await identity(db,a);await assert.rejects(()=>db.query('select * from public.accept_suggestions($1,$2,$3)',[extraction,[0],JSON.stringify([edit])]));
  await identity(db,b);await db.query("insert into public.mcp_grants(client_id) values('chatgpt-shared')");
  await identity(db,b,'chatgpt-shared');assert.equal((await db.query('select * from public.thoughts')).rows.length,2);

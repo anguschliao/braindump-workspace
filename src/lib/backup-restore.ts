@@ -5,7 +5,7 @@ const columns: Record<string, string[]> = {
   boards: ['id', 'created_by', 'title', 'created_at', 'workspace_id'],
   tags: ['id', 'created_by', 'name', 'workspace_id'],
   thought_tags: ['created_by', 'thought_id', 'tag_id', 'workspace_id'],
-  items: ['id', 'created_by', 'kind', 'title', 'details', 'status', 'source_id', 'board_id', 'due_on', 'starts_at', 'ends_at', 'timezone', 'created_at', 'workspace_id', 'assigned_to', 'calendar_owner_id', 'updated_by', 'updated_at'],
+  items: ['id', 'created_by', 'kind', 'title', 'details', 'status', 'source_id', 'board_id', 'due_on', 'starts_at', 'ends_at', 'timezone', 'created_at', 'workspace_id', 'assigned_to', 'calendar_owner_id', 'for_both', 'updated_by', 'updated_at'],
   extractions: ['id', 'created_by', 'thought_id', 'suggestions', 'accepted_ids', 'model', 'created_at', 'workspace_id'],
 };
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -25,12 +25,13 @@ export function recoverySql(input: unknown): string {
   const statements = [
     '-- Review before running as a database operator. Contains private business data.',
     '-- Inserts missing records only. Existing records are never overwritten.',
-    '-- Requires migrations 001 and 002 and the same auth user IDs.',
+    '-- Requires migrations 001 through 006 and the same auth user IDs.',
     'begin;',
     "set local standard_conforming_strings = on;",
   ];
   for (const [table, fields] of Object.entries(columns)) {
-    const rows = tables[table];
+    const rawRows = tables[table];
+    const rows = Array.isArray(rawRows) ? rawRows.map(value => table === 'items' ? {for_both:false,...object(value)} : value) : rawRows;
     if (!Array.isArray(rows)) throw new Error('Missing export table: ' + table);
     for (const value of rows) {
       const row = object(value);
