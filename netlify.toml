@@ -1,0 +1,13 @@
+[build]
+  command = "node node_modules/next/dist/bin/next build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "24"
+  PNPM_VERSION = "11.25.0"
+  NEXT_TELEMETRY_DISABLED = "1"
+
+# Netlify automatically supplies its Next.js/OpenNext adapter.
+# Set Supabase variables and APP_ORIGIN in the Netlify project UI,
+# with both build and runtime scopes. See docs/hosting.md.
+# Do not use static drag-and-drop hosting: this app needs API routes.

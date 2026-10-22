@@ -1,0 +1,9 @@
+node_modules/
+.next/
+.env*
+!.env.example
+*.tsbuildinfo
+.pnpm-store/
+.test-build/
+.netlify/
+node_modules.hosting-backup/
