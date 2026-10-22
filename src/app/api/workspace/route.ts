@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { authenticate,checkOrigin,readJson,reply,fail,HttpError } from '@/lib/server';
 import { operation,validItem } from '@/lib/schema';
-import { extract } from '@/lib/extract';
+import { suggestThought } from '@/lib/suggest';
 export const runtime='nodejs';
 export async function GET(req:Request){try{
  checkOrigin(req);const {db}=await authenticate(req);const params=new URL(req.url).searchParams;
@@ -25,16 +25,12 @@ export async function POST(req:Request){try{
  case 'item':case 'edit_item':{if(!validItem(v)||(v.board_id&&v.kind!=='idea')||(v.assigned_to&&v.kind!=='task')||(v.calendar_owner_id&&v.kind!=='event'))throw new HttpError(400,'Check the item dates, member, and board.');const {op,id,...row}=v;result=op==='item'?await db.from('items').insert({id,...row}).select().single():await db.from('items').update(row).eq('id',id).select().single();break;}
  case 'update_item':result=await db.from('items').update({status:v.status}).eq('id',v.id).select().single();break;
  case 'archive_thought':result=await db.from('thoughts').update({archived:true}).eq('id',v.id).select().single();break;
- case 'extract':{
- if(process.env.AI_ENABLED!=='true'||!process.env.OPENAI_API_KEY||!process.env.OPENAI_MODEL)throw new HttpError(503,'AI is disabled. Manual organization is available.');
- const {data:thought,error}=await db.from('thoughts').select('*').eq('id',v.thought_id).eq('archived',false).single();if(error||!thought)throw new HttpError(404,'Thought not found.');
- const quota=await db.rpc('consume_ai_attempt');if(quota.error)throw quota.error;if(!quota.data)throw new HttpError(429,'Daily AI limit reached. Try again tomorrow.');
- const suggestions=await extract(thought.body,thought.timezone,thought.created_at);
- result=await db.from('extractions').insert({thought_id:thought.id,suggestions,model:process.env.OPENAI_MODEL}).select().single();break;}
+ case 'extract':{const ai=await suggestThought(db,v.thought_id);if(!ai.extraction)throw new HttpError(409,ai.status==='budget'?'Monthly AI budget reached. Your thoughts can still be saved.':ai.status==='disabled'?'AI is not enabled.': 'This thought was already attempted or suggestions are unavailable. You can organize it manually.');result={data:ai.extraction,error:null};break;}
  case 'accept':if(v.indexes.length!==v.edits.length||new Set(v.indexes).size!==v.indexes.length)throw new HttpError(400,'Invalid selection.');result=await db.rpc('accept_suggestions',{p_id:v.extraction_id,p_indexes:v.indexes,p_edits:v.edits});break;
  case 'grant':result=await db.from('mcp_grants').insert({client_id:v.client_id}).select().single();break;
  case 'revoke':result=await db.from('mcp_grants').delete().eq('client_id',v.client_id);break;
  }
  if(result.error){if(result.error.code==='PGRST116')throw new HttpError(404,'Record not found.');if(['23505','23514','23503','P0001'].includes(result.error.code??''))throw new HttpError(409,'Could not save: duplicate action, invalid dates, or unavailable reference.');throw result.error;}
+ if(v.op==='capture'){let status='unavailable';try{status=(await suggestThought(db,v.id)).status;}catch{}return reply({...result.data,ai_status:status});}
  return reply(result.data);
  }catch(e){return fail(e instanceof z.ZodError?new HttpError(400,e.issues[0]?.message??'Invalid input.'):e);}}
