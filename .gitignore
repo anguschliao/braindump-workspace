@@ -7,3 +7,6 @@ node_modules/
 .test-build/
 .netlify/
 node_modules.hosting-backup/
+
+# Private local workspace exports and recovery files
+/backup/

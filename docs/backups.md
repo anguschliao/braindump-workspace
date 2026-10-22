@@ -5,7 +5,7 @@ exporting; the download reads all pages but is not a single database snapshot.
 It includes archived content, author IDs, assignments, tags and reviewed suggestions.
 Search text and the UI's first-100-record limit do not restrict the export.
 
-Keep dated copies in private storage outside this repository. Confirm the JSON file
+Save all local backups and generated recovery SQL in the project backup/ folder: C:UsersAngooseOneDriveDocumentsProjectsraindump-workspaceackup. This folder is excluded from Git. Browser downloads must be saved or moved there manually; Android cannot directly write to this Windows folder. Confirm the JSON file
 saved successfully. Download weekly and before substantial changes. This is manual:
 no background backup schedule is enabled. No passwords, sessions, OAuth grants,
 auth accounts, or rate-limit counters are included.
@@ -43,3 +43,4 @@ They require database access and backup tooling; never commit database credentia
 The app and this repository do not contain a database password or service-role key.
 Before calling disaster recovery ready, verify restored content counts, both users'
 access, author/assignee relationships and RLS isolation in the separate project.
+
