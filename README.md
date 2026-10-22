@@ -29,3 +29,11 @@ See [verification results](docs/verification.md) for checks actually run and rem
 See [design and API contracts](docs/architecture.md) and [release gates](docs/release.md). MCP is implemented as a disabled-by-default resource server; full ChatGPT linking requires a deployed HTTPS endpoint, configured OAuth issuer, verified audience binding, consent, and an account-level connection test. It is not presented as an already connected integration.
 
 Hosting preparation: see [hosting setup](docs/hosting.md) and netlify.toml. Deployment requires separate approval.
+
+## Install on Android
+Open https://sotaria-workspace.netlify.app in Chrome. Use the three-dot menu,
+then **Add to Home screen** / **Install app**, and confirm. Launch Stillroom
+from its new icon. Installation is available after the manifest update is deployed.
+The app opens in a standalone window and still requires internet access.
+This release adds no offline cache, offline capture, or push notifications.
+If Chrome offers only a shortcut, refresh the page and check again after deployment.
