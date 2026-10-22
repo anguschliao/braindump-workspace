@@ -10,10 +10,17 @@ export async function suggestThought(db:SupabaseClient, id:string) {
  const reservation=await db.rpc('reserve_ai_thought',{p_id:id});
  if(reservation.error)throw reservation.error;
  if(reservation.data!=='reserved')return {status:reservation.data==='budget'?'budget':'already_attempted',extraction:null};
+ let stage='provider';
  try {
    const suggestions=await extract(thought.data.body,thought.data.timezone,thought.data.created_at);
+   stage='save';
    const saved=await db.from('extractions').insert({thought_id:id,suggestions,model:AI_MODEL}).select().single();
    if(saved.error)throw saved.error;
    return {status:'completed',extraction:saved.data};
- } catch { return {status:'unavailable',extraction:null}; }
+ } catch (error) {
+   const e=error as {name?:string;status?:number;code?:string};
+   const safe=(v:unknown)=>typeof v==='string' && /^[a-zA-Z0-9_]{1,64}$/.test(v)?v:undefined;
+   console.error('AI suggestion failed',{stage,name:safe(e?.name),status:typeof e?.status==='number'?e.status:undefined,code:safe(e?.code)});
+   return {status:'unavailable',extraction:null};
+ }
 }
