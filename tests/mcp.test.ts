@@ -12,7 +12,7 @@ test('MCP stateless transport advertises only read tools and validates input',as
  try{const result=await transport.handleRequest(new Request(resource,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json, text/event-stream'},body:JSON.stringify({jsonrpc:'2.0',id:1,method,params})}));return await result.json();}finally{await server.close();}
  }
  const initialized=await rpc('initialize',{protocolVersion:'2025-03-26',capabilities:{},clientInfo:{name:'test',version:'1'}});
- assert.equal(initialized.result.serverInfo.name,'stillroom');
+ assert.equal(initialized.result.serverInfo.name,'sotaria-workspace');
  const listed=await rpc('tools/list',{});
  assert.deepEqual(listed.result.tools.map((t:{name:string})=>t.name),['search','fetch']);
  assert.ok(listed.result.tools.every((t:{annotations:{readOnlyHint:boolean}})=>t.annotations.readOnlyHint));
