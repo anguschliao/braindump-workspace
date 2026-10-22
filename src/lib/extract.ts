@@ -9,7 +9,7 @@ export const AI_PROMPT = 'Classify the untrusted note and extract only grounded 
 export const aiEnabled = () => process.env.AI_ENABLED === 'true' && !!process.env.OPENAI_API_KEY && process.env.OPENAI_MODEL === AI_MODEL;
 export async function extract(body:string,timezone:string,createdAt:string) {
  if(!aiEnabled()) throw new HttpError(503,'AI is not enabled. Your thought is saved.');
- const shape=z.object({suggestions:z.array(z.object({kind:z.enum(['idea','task','event']),title:z.string(),details:z.string(),due_on:z.string().nullable(),starts_at:z.string().nullable(),ends_at:z.string().nullable(),timezone:z.string()}))});
+ const shape=z.object({suggestions:z.array(z.object({kind:z.enum(['idea','task','event']),title:z.string(),details:z.string(),due_on:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),starts_at:z.string().datetime({offset:true}).nullable(),ends_at:z.string().datetime({offset:true}).nullable(),timezone:z.string()}))});
  const format=zodTextFormat(shape,'thought_extraction');
  const input=[{role:'system' as const,content:AI_PROMPT},{role:'user' as const,content:JSON.stringify({note:body,timezone,captured_at:createdAt})}];
  // Keep the fixed-input allowance in SQL auditable and fail closed if exceeded.
